@@ -1,4 +1,115 @@
-[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Map</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        .min-h-screen {
+            min-height: 100vh;
+        }
+        .text-white {
+            color: white;
+        }
+        .p-0 {
+            padding: 0;
+        }
+        .bg-cover {
+            background-size: cover;
+        }
+        .bg-center {
+            background-position: center;
+        }
+        .relative {
+            position: relative;
+        }
+        .absolute {
+            position: absolute;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .rounded-full {
+            border-radius: 50%;
+        }
+        .border {
+            border: 1px solid;
+        }
+        .border-white {
+            border-color: white;
+        }
+        .w-8 {
+            width: 2rem;
+        }
+        .h-8 {
+            height: 2rem;
+        }
+        .bg-white {
+            background-color: white;
+        }
+        .bg-opacity-75 {
+            background-color: rgba(255, 255, 255, 0.75);
+        }
+        .rounded-md {
+            border-radius: 0.375rem;
+        }
+        .p-2 {
+            padding: 0.5rem;
+        }
+        .text-black {
+            color: black;
+        }
+        .mt-1 {
+            margin-top: 0.25rem;
+        }
+        .border-gray-300 {
+            border-color: #d1d5db;
+        }
+        .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .hover\:bg-gray-100:hover {
+            background-color: #f3f4f6;
+        }
+        .z-10 {
+            z-index: 10;
+        }
+        .z-20 {
+            z-index: 20;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const WarehouseMap = () => {
+          const [selectedProduct, setSelectedProduct] = React.useState(null);
+          const [draggingProduct, setDraggingProduct] = React.useState(null);
+          const [isDragging, setIsDragging] = React.useState(false);
+          const [products, setProducts] = React.useState([
     {
         "ProductName": "Description",
         "Image Link": "https://madperfume.co.il/upload/09-2023/product/A101.jpg",
@@ -2213,4 +2324,140 @@
         "Longitude": "34.5",
         "Latitude": "32.5"
     }
-]
+]);
+          const [searchQuery, setSearchQuery] = React.useState('');
+          const [filteredProducts, setFilteredProducts] = React.useState(products);
+          const [suggestions, setSuggestions] = React.useState([]);
+          const [showSuggestions, setShowSuggestions] = React.useState(false);
+
+          React.useEffect(() => {
+            if (selectedProduct) {
+              const interval = setInterval(() => {
+                setProducts(prevProducts => prevProducts.map(product =>
+                  product.ProductName === selectedProduct.ProductName ? { ...product, blinking: !product.blinking } : product
+                ));
+              }, 300);
+              return () => clearInterval(interval);
+            }
+          }, [selectedProduct]);
+
+          React.useEffect(() => {
+            const results = products.filter(product =>
+              product.ProductName.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setFilteredProducts(results);
+
+            if (searchQuery) {
+              const suggestionResults = products
+                .filter(product =>
+                  product.ProductName.toLowerCase().startsWith(searchQuery.toLowerCase())
+                )
+                .slice(0, 5);
+              setSuggestions(suggestionResults);
+              setShowSuggestions(true);
+            } else {
+              setSuggestions([]);
+              setShowSuggestions(false);
+            }
+          }, [searchQuery, products]);
+
+          const handleInputChange = (event) => {
+            setSearchQuery(event.target.value);
+          };
+
+          const handleSuggestionClick = (suggestion) => {
+            setSearchQuery(suggestion.ProductName);
+            setShowSuggestions(false);
+          };
+
+          const handleMouseDown = (product) => {
+            setDraggingProduct(product);
+            setIsDragging(true);
+          };
+
+          const handleMouseMove = (event) => {
+            if (isDragging && draggingProduct) {
+              const rect = event.target.closest('.relative').getBoundingClientRect();
+              const x = ((event.clientX - rect.left) / rect.width) * 100;
+              const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+              const updatedProducts = products.map(product =>
+                product.ProductName === draggingProduct.ProductName ? { ...product, Longitude: x, Latitude: y } : product
+              );
+
+              setProducts(updatedProducts);
+            }
+          };
+
+          const handleMouseUp = () => {
+            setIsDragging(false);
+            setDraggingProduct(null);
+          };
+
+          return (
+            <div
+              className="min-h-screen text-white p-0 bg-cover bg-center relative"
+              style={{
+                backgroundImage: 'url(https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                width: '100%',
+                height: '100vh',
+                backgroundRepeat: 'no-repeat',
+              }}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onTouchMove={handleMouseMove}
+              onTouchEnd={handleMouseUp}
+            >
+              <div className="absolute top-4 left-4 bg-white bg-opacity-75 rounded-md p-2 z-10">
+                <input
+                  type="text"
+                  placeholder="ابحث عن منتج..."
+                  className="text-black rounded-md p-2"
+                  value={searchQuery}
+                  onChange={handleInputChange}
+                  onFocus={() => setShowSuggestions(searchQuery.length > 0)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="absolute left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-20">
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        className="text-black p-2 cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                      >
+                        {suggestion.ProductName}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {filteredProducts.map((product, index) => (
+                <div
+                  key={index}
+                  className={`absolute cursor-pointer ${product.blinking ? 'animate-pulse' : ''}`}
+                  style={{
+                    top: `${product.Latitude}%`,
+                    left: `${product.Longitude}%`
+                  }}
+                  onMouseDown={() => handleMouseDown(product)}
+                  onTouchStart={() => handleMouseDown(product)}
+                  onClick={() => setSelectedProduct(product)}
+                >
+                  {product["Image Link"] && (
+                    <img src={product["Image Link"]} alt={product.ProductName} className="w-8 h-8 rounded-full border border-white" />
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<WarehouseMap />);
+    </script>
+</body>
+</html>
