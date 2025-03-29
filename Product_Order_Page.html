@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Order Page</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        body { background-color: black; color: white; font-family: Arial, sans-serif; }
+        .card { background-color: white; color: black; padding: 10px; margin: 10px; border-radius: 10px; }
+        .button { background-color: green; color: white; padding: 10px; margin-top: 10px; cursor: pointer; border: none; border-radius: 5px; }
+        .search-box { margin-top: 10px; padding: 5px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div>
+    <input type="file" id="fileInput" accept=".json" />
+    <input type="text" id="search" class="search-box" placeholder="ابحث عن المنتج...">
+    <button onclick="submitOrder()">إرسال الطلب وحفظ كـ PDF</button>
+</div>
+
+<div id="products"></div>
+
+<script>
+    const { jsPDF } = window.jspdf;
+    let products = [];
+    let filteredProducts = [];
+    const selectedProducts = [];
+
+    document.getElementById('fileInput').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            products = JSON.parse(e.target.result);
+            filteredProducts = products;
+            displayProducts();
+        };
+
+        reader.readAsText(file);
+    });
+
+    document.getElementById('search').addEventListener('input', (event) => {
+        const searchTerm = event.target.value.toLowerCase();
+        filteredProducts = products.filter(product => product.name.toLowerCase().includes(searchTerm));
+        displayProducts();
+    });
+
+    function displayProducts() {
+        const productsDiv = document.getElementById('products');
+        productsDiv.innerHTML = '';
+
+        filteredProducts.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'card';
+            productCard.innerHTML = `<h2>${product.name}</h2>
+                <p>${product.description}</p>
+                <input type='number' value='1' min='1' id='quantity-${product.name}' />
+                <button class='button' onclick='addToOrder("${product.name}")'>إضافة إلى الطلب</button>`;
+            productsDiv.appendChild(productCard);
+        });
+    }
+
+    function addToOrder(productName) {
+        const quantity = document.getElementById(`quantity-${productName}`).value;
+        selectedProducts.push({ name: productName, quantity });
+        alert('✅ تمت إضافة المنتج إلى الطلب');
+    }
+
+    function submitOrder() {
+        const orderText = selectedProducts.map(product => `- ${product.name} (الكمية: ${product.quantity})`).join('\n');
+        const whatsappUrl = `https://wa.me/?text=طلب جديد:\n${encodeURIComponent(orderText)}`;
+        window.open(whatsappUrl, '_blank');
+
+        const doc = new jsPDF();
+        doc.setFontSize(12);
+        doc.text('Order List', 10, 10);
+
+        selectedProducts.forEach((product, index) => {
+            doc.text(`${index + 1}. ${product.name} - الكمية: ${product.quantity}`, 10, 20 + index * 10);
+        });
+
+        doc.save('Order_List.pdf');
+    }
+</script>
+
+</body>
+</html>
